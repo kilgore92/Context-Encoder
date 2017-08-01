@@ -1,7 +1,7 @@
 # Inpainting
 ## Implementation of "Context Encoders: Feature Learning by Inpainting" [[PDF](http://www.cs.berkeley.edu/~pathak/papers/cvpr16.pdf)]
 
-This TensorFlow (0.12) implementation of Context Encoder could support multi resolution, the image or the inpaint area. Additionally, it supports TensorBoard visualization.
+This TensorFlow (0.12) implementation of Context Encoder could support multi resolutions, for the image or the inpaint area. Additionally, it supports TensorBoard visualization.
 
 This project is an extension of the fine TensorFlow implementation of Context Encoder by [T. Kim](https://github.com/jazzsaxmafia/Inpainting). 
 
