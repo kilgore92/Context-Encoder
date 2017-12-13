@@ -1,8 +1,8 @@
 import tensorflow as tf
 import numpy as np
 import math
+import pickle
 
-import cPickle
 class Model():
     def __init__(self, image_size, hiding_size, batch_size):
 
@@ -13,8 +13,8 @@ class Model():
 
         # each layer will do 128 x 128 -> 64 x 64
         encoderLayerNum = int(math.log(self.image_size) / math.log(2))
-        encoderLayerNum = encoderLayerNum - 1 # minus 1 because the second last layer directly go from 4x4 to 1x1 
-        print("encoderLayerNum=", encoderLayerNum)
+        encoderLayerNum = encoderLayerNum - 1 # minus 1 because the second last layer directly go from 4x4 to 1x1
+        print("encoderLayerNum = {}".format(encoderLayerNum))
         self.encoderLayerNum = encoderLayerNum
 
         decoderLayerNum = int(math.log(self.hiding_size) / math.log(2))
@@ -188,9 +188,9 @@ class Model():
 
             previousFeatureMap = debn
 
-            previousDepth = depth
-            depth = depth / 2
-            featureMapSize = featureMapSize *2
+            previousDepth = int(depth)
+            depth = int(depth / 2)
+            featureMapSize = int(featureMapSize *2)
 
             for layer in range(decoderLayerNum-1,1, -1):
                 print("build_reconstruction decoder layer=", layer)
