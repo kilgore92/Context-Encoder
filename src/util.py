@@ -2,6 +2,7 @@ import skimage.io
 import skimage.transform
 from PIL import ImageFile
 import os
+import cv2
 
 import numpy as np
 
@@ -9,11 +10,11 @@ import numpy as np
 def load_image( path, pre_height=146, pre_width=146, width=128, height=128 ):
 
     try:
-        img = skimage.io.imread( path ).astype( float )
+        img = cv2.imread( path ).astype(np.float)
     except:
         return None
 
-    img /= 255. # Scale to 0-1 range
+    img /= 255 # Scale to 0-1 range
 
     if img is None: return None
     if len(img.shape) < 2: return None

@@ -52,11 +52,11 @@ testset = testset.ix[np.random.permutation(len(testset))]
 is_train = tf.placeholder( tf.bool )
 
 learning_rate = tf.placeholder( tf.float32, [])
-images_tf = tf.placeholder( tf.float32, [None, image_size, image_size, 3], name="images")
+images_tf = tf.placeholder( tf.float32, shape = [None, image_size, image_size, 3], name="images")
 
 labels_D = tf.concat([tf.ones([batch_size]), tf.zeros([batch_size])],0)
 labels_G = tf.ones([batch_size])
-images_hiding = tf.placeholder( tf.float32, [None, hiding_size, hiding_size, 3], name='images_hiding') #Placeholder for patches
+images_hiding = tf.placeholder( tf.float32, shape = [None, hiding_size, hiding_size, 3], name='images_hiding') #Placeholder for patches
 
 model = Model(image_size, hiding_size, batch_size)
 
