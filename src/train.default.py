@@ -7,6 +7,9 @@ import cv2
 from model import *
 from util import *
 import pickle
+import shutil
+
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 n_epochs = 10000
 learning_rate_val = 0.0003
@@ -22,8 +25,8 @@ hiding_size = 16
 trainset_path = 'train'
 testset_path  = 'test'
 dataset_path = '/home/ibhat/image_completion/dcgan-completion.tensorflow/data/celebA'
-model_path = '../models/celebA/'
-result_path= '../results/celebA/'
+model_path = '../models/celebA_ce'
+result_path= '../results/celebA_ce'
 pretrained_model_path = None
 
 if os.path.exists(model_path):
@@ -49,11 +52,11 @@ testset = testset.ix[np.random.permutation(len(testset))]
 is_train = tf.placeholder( tf.bool )
 
 learning_rate = tf.placeholder( tf.float32, [])
-images_tf = tf.placeholder( tf.float32, [batch_size, image_size, image_size, 3], name="images")
+images_tf = tf.placeholder( tf.float32, [None, image_size, image_size, 3], name="images")
 
 labels_D = tf.concat([tf.ones([batch_size]), tf.zeros([batch_size])],0)
 labels_G = tf.ones([batch_size])
-images_hiding = tf.placeholder( tf.float32, [batch_size, hiding_size, hiding_size, 3], name='images_hiding') #Placeholder for patches
+images_hiding = tf.placeholder( tf.float32, [None, hiding_size, hiding_size, 3], name='images_hiding') #Placeholder for patches
 
 model = Model(image_size, hiding_size, batch_size)
 
@@ -256,7 +259,7 @@ for epoch in range(n_epochs):
         iters += 1
 
 
-    saver.save(sess, model_path+'model.ckpt', global_step=epoch)
+    saver.save(sess,os.path.join(model_path,'model.ckpt'), global_step=epoch)
     learning_rate_val *= 0.99
 
 
