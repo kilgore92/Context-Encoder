@@ -22,12 +22,14 @@ hiding_size = 16
 trainset_path = 'train'
 testset_path  = 'test'
 dataset_path = '/home/ibhat/image_completion/dcgan-completion.tensorflow/data/celebA'
-model_path = '../models/default/'
+model_path = '../models/celebA/'
 result_path= '../results/celebA/'
 pretrained_model_path = None
 
-if not os.path.exists(model_path):
-    os.makedirs( model_path )
+if os.path.exists(model_path):
+    shutil.rmtree(model_path)
+
+os.makedirs( model_path )
 
 if not os.path.exists(result_path):
     os.makedirs( result_path )
@@ -41,8 +43,6 @@ if not os.path.exists( trainset_path ) or not os.path.exists( testset_path ):
 
     trainset = pd.DataFrame({'image_path':train_images[:int(len(train_images)*0.9)]})
     testset = pd.DataFrame({'image_path':train_images[int(len(train_images)*0.9):]})
-    #trainset.to_pickle( trainset_path )
-    #testset.to_pickle( testset_path )
 
 testset.index = range(len(testset))
 testset = testset.ix[np.random.permutation(len(testset))]
@@ -53,7 +53,7 @@ images_tf = tf.placeholder( tf.float32, [batch_size, image_size, image_size, 3],
 
 labels_D = tf.concat([tf.ones([batch_size]), tf.zeros([batch_size])],0)
 labels_G = tf.ones([batch_size])
-images_hiding = tf.placeholder( tf.float32, [batch_size, hiding_size, hiding_size, 3], name='images_hiding')
+images_hiding = tf.placeholder( tf.float32, [batch_size, hiding_size, hiding_size, 3], name='images_hiding') #Placeholder for patches
 
 model = Model(image_size, hiding_size, batch_size)
 
@@ -63,7 +63,7 @@ writer = tf.summary.FileWriter("./../logs")
 reconstruction_ori, reconstruction = model.build_reconstruction(images_tf, is_train)
 
 adversarial_pos = model.build_adversarial(images_hiding, is_train)
-adversarial_neg = model.build_adversarial(reconstruction, is_train, reuse=True)
+adversarial_neg = model.build_adversarial(reconstruction, is_train, reuse=True) #D(F((1-M)*x))
 adversarial_all = tf.concat([adversarial_pos, adversarial_neg],0)
 
 # Applying bigger loss for overlapping region
@@ -80,7 +80,12 @@ loss_recon = loss_recon_center + loss_recon_overlap
 loss_adv_D = tf.reduce_mean( tf.nn.sigmoid_cross_entropy_with_logits(logits = adversarial_all, labels = labels_D))
 loss_adv_G = tf.reduce_mean( tf.nn.sigmoid_cross_entropy_with_logits(logits = adversarial_neg, labels = labels_G))
 
+
+# G : Encoder-decoder structure
+# The weights of this structure contribute to both the adv and L2 loss,
+# Thus, loss_G is a weighted sum of these
 loss_G = loss_adv_G * lambda_adv + loss_recon * lambda_recon
+# The discriminator is trained on the standard GAN loss
 loss_D = loss_adv_D * lambda_adv
 
 var_G = list(filter( lambda x: x.name.startswith('GEN'), tf.trainable_variables()))
@@ -89,6 +94,7 @@ var_D = list(filter( lambda x: x.name.startswith('DIS'), tf.trainable_variables(
 W_G = list(filter(lambda x: x.name.endswith('W:0'), var_G))
 W_D = list(filter(lambda x: x.name.endswith('W:0'), var_D))
 
+# Regularization
 loss_G += weight_decay_rate * tf.reduce_mean(tf.stack( list(map(lambda x: tf.nn.l2_loss(x), W_G))))
 loss_D += weight_decay_rate * tf.reduce_mean(tf.unstack( list(map(lambda x: tf.nn.l2_loss(x), W_D))))
 
@@ -114,7 +120,7 @@ grads_vars_D = optimizer_D.compute_gradients( loss_D, var_list=var_D )
 grads_vars_D = list(map(lambda gv: [tf.clip_by_value(gv[0], -10., 10.), gv[1]], grads_vars_D))
 train_op_D = optimizer_D.apply_gradients( grads_vars_D )
 
-saver = tf.train.Saver(max_to_keep=5)
+saver = tf.train.Saver(max_to_keep=1)
 
 init = tf.global_variables_initializer()
 sess.run(init)
@@ -137,14 +143,15 @@ for epoch in range(n_epochs):
             range(0, len(trainset), batch_size),
             range(batch_size, len(trainset), batch_size)):
 
-        image_paths = trainset[start:end]['image_path'].values
+
+        image_paths = trainset[start:end]['image_path'].values # Selects a batch randomly
         images_ori = list(map(lambda x: load_image( x ,pre_width=(image_size+18), pre_height=(image_size+18),width=image_size,height=image_size), image_paths))
         is_none = np.sum(list(map(lambda x: x is None, images_ori)))
-        if is_none > 0: continue
+        if (is_none > 0): continue
 
         # images_crops = map(lambda x: crop_random(x,width=hiding_size,height=hiding_size, overlap=overlap_size), images_ori)
         images_crops = list(map(lambda x: crop_random(x,width=hiding_size,height=hiding_size,x=crop_pos, y=crop_pos, overlap=overlap_size, isShake=True), images_ori))
-        images, crops,_,_ = zip(*images_crops)
+        images, crops,_,_ = zip(*images_crops) #Unpack returned values
 
         # Printing activations every 100 iterations
         if iters % 100 == 0:
@@ -186,7 +193,7 @@ for epoch in range(n_epochs):
                     ii = 0
                     for test_image in test_images_ori:
                         test_image = (255. * (test_image+1)/2.).astype(int)
-                        test_image[32:32+hiding_size,32:32+hiding_size] = 0
+                        test_image[32:32+hiding_size,32:32+hiding_size] = 0 # WHY THE FUCK IS THIS BEING DONE ?!
                         cv2.imwrite( os.path.join(result_path, 'img_'+str(ii)+'.ori.jpg'), test_image)
                         ii += 1
                         if ii > 50: break
@@ -201,13 +208,13 @@ for epoch in range(n_epochs):
                 print ("NaN detected!!")
                 #ipdb.set_trace()
 
-        # Generative Part is updated every iteration
+        # Generative Part (Enc-Dec) + Discriminator is updated every iteration (Alternating SGD)
 
         _, loss_G_val, adv_pos_val, adv_neg_val, loss_recon_val, loss_adv_G_val, reconstruction_vals, recon_ori_vals, g_summary_str = sess.run(
                 [train_op_G, loss_G, adversarial_pos, adversarial_neg, loss_recon, loss_adv_G, reconstruction, reconstruction_ori,g_summary],
                 feed_dict={
-                    images_tf: images,
-                    images_hiding: crops,
+                    images_tf: images, # image with missing patch
+                    images_hiding: crops, #patches
                     learning_rate: learning_rate_val,
                     is_train: True
                     })
@@ -249,7 +256,7 @@ for epoch in range(n_epochs):
         iters += 1
 
 
-    saver.save(sess, model_path + 'model', global_step=epoch)
+    saver.save(sess, model_path+'model.ckpt', global_step=epoch)
     learning_rate_val *= 0.99
 
 

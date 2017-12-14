@@ -128,6 +128,10 @@ class Model():
         return normed
 
     def build_reconstruction( self, images, is_train ):
+        """
+        Builds the encoder-decoder structure
+
+        """
         batch_size = images.get_shape().as_list()[0]
 
 
@@ -207,6 +211,9 @@ class Model():
         return recon, tf.nn.tanh(recon)
 
     def build_adversarial(self, images, is_train, reuse=None):
+        """
+        Builds the dicriminator network
+        """
         with tf.variable_scope('DIS', reuse=reuse):
             # conv1 = self.new_conv_layer(images, [4,4,3,64], stride=2, name="conv1" )
             # bn1 = self.leaky_relu(self.batchnorm(conv1, is_train, name='bn1'))

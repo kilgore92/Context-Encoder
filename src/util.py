@@ -13,7 +13,7 @@ def load_image( path, pre_height=146, pre_width=146, width=128, height=128 ):
     except:
         return None
 
-    img /= 255.
+    img /= 255. # Scale to 0-1 range
 
     if img is None: return None
     if len(img.shape) < 2: return None
@@ -33,6 +33,7 @@ def load_image( path, pre_height=146, pre_width=146, width=128, height=128 ):
 
     resized_img = resized_img[ rand_y:rand_y+height, rand_x:rand_x+width, : ]
 
+    # Scale to [-1,1]
     return (resized_img * 2)-1 #(resized_img - 127.5)/127.5
 
 def crop_random(image_ori, width=64,height=64, x=None, y=None, overlap=7, isShake = False):
