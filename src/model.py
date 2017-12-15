@@ -17,6 +17,8 @@ class Model():
         print("encoderLayerNum = {}".format(encoderLayerNum))
         self.encoderLayerNum = encoderLayerNum
 
+        # Implementation out of sync with the paper??
+        # Input to the encoder is the image, why is the decoder output only the patch ??
         decoderLayerNum = int(math.log(self.hiding_size) / math.log(2))
         decoderLayerNum = decoderLayerNum - 1
         print("decoderLayerNum=", decoderLayerNum)

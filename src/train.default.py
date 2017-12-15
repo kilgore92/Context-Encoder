@@ -56,7 +56,7 @@ images_tf = tf.placeholder( tf.float32, shape = [None, image_size, image_size, 3
 
 labels_D = tf.concat([tf.ones([batch_size]), tf.zeros([batch_size])],0)
 labels_G = tf.ones([batch_size])
-images_hiding = tf.placeholder( tf.float32, shape = [None, hiding_size, hiding_size, 3], name='images_hiding') #Placeholder for patches
+images_hiding = tf.placeholder( tf.float32, [None, hiding_size, hiding_size, 3], name='images_hiding') #Placeholder for patches
 
 model = Model(image_size, hiding_size, batch_size)
 
@@ -196,7 +196,7 @@ for epoch in range(n_epochs):
                     ii = 0
                     for test_image in test_images_ori:
                         test_image = (255. * (test_image+1)/2.).astype(int)
-                        test_image[32:32+hiding_size,32:32+hiding_size] = 0 # WHY THE FUCK IS THIS BEING DONE ?!
+                        test_image[crop_pos:crop_pos+hiding_size,crop_pos:crop_pos+hiding_size] = 0 # WHY THE FUCK IS THIS BEING DONE ?!
                         cv2.imwrite( os.path.join(result_path, 'img_'+str(ii)+'.ori.jpg'), test_image)
                         ii += 1
                         if ii > 50: break
