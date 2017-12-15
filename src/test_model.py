@@ -1,5 +1,5 @@
-import model
 import tensorflow as tf
+from model import *
 import os
 import random
 import cv2
@@ -26,13 +26,14 @@ def load(sess,saver,checkpoint_dir):
     ckpt = tf.train.get_checkpoint_state(checkpoint_dir)
     if ckpt and ckpt.model_checkpoint_path:
         saver.restore(sess, ckpt.model_checkpoint_path)
+        print(ckpt.model_checkpoint_path)
         return True
     else:
         return False
 
 dataset_path = '/home/ibhat/image_completion/dcgan-completion.tensorflow/data/celebA'
-test_image_files = create_file_list(image_dir = dataset_path,num_samples=5)
-checkpoint_path = '/home/ibhat/context_enc/Context-Encoder/models/celebA_vanilla'
+test_image_files = create_file_list(image_dir = dataset_path,num_samples=64)
+checkpoint_path = '/home/ibhat/context_enc/Context-Encoder/models/celebA_ce'
 dump_dir = 'test_dump'
 
 if os.path.exists(dump_dir):
@@ -43,10 +44,10 @@ os.makedirs(dump_dir)
 #Instantiate model
 image_size = 64
 hiding_size = 16
-batch_size = 1
+batch_size = 64
 overlap_size = 7
 
-model = model.Model(image_size = image_size , hiding_size = hiding_size , batch_size = batch_size )
+model = Model(image_size = image_size , hiding_size = hiding_size , batch_size = batch_size )
 images_tf = tf.placeholder( tf.float32, [None, image_size, image_size, 3], name="images")
 images_hiding = tf.placeholder( tf.float32, [None, hiding_size, hiding_size, 3], name='images_hiding') #Placeholder for patches
 is_train = tf.placeholder( tf.bool )
@@ -66,29 +67,27 @@ sess.run(init)
 isLoaded = load(sess = sess ,saver = saver,checkpoint_dir=checkpoint_path)
 print(isLoaded)
 
-for test_image_path,idx in zip(test_image_files,range(len(test_image_files))):
-    test_image = load_image(test_image_path,pre_width=(image_size+18), pre_height=(image_size+18),width=image_size,height=image_size)
-    cropped_image,crop,xs,ys = crop_random(test_image, width=hiding_size,height=hiding_size, x=crop_pos, y=crop_pos, overlap=overlap_size)
 
-    reconstruction_vals,reconstruction_ori_vals  = sess.run(
-            [reconstruction,reconstruction_ori],
-            feed_dict={
-                images_tf: cropped_image.reshape(1,image_size,image_size,3),
-                images_hiding: crop.reshape(1,hiding_size,hiding_size,3),
-                is_train: False
-                })
+test_images_ori = list(map(lambda x: load_image(x,pre_width=(image_size+18), pre_height=(image_size+18),width=image_size,height=image_size), test_image_files))
+test_images_crop = list(map(lambda x: crop_random(x, width=hiding_size,height=hiding_size, x=crop_pos, y=crop_pos, overlap=overlap_size), test_images_ori))
+test_images, test_crops, xs,ys = zip(*test_images_crop)
 
-    # Missing patch
-    recon_missing = (255.*(reconstruction_ori_vals+1)/2.).astype(int)
-    true_image = (255. * (cropped_image + 1)/2.).astype(int)
-    patch = (255. * (crop + 1)/2.).astype(int)
+reconstruction_vals,reconstruction_ori_vals  = sess.run(
+        [reconstruction,reconstruction_ori],
+        feed_dict={
+            images_tf: test_images,
+            images_hiding: test_crops,
+            is_train: False
+            })
+
+idx = 0
+for recon_patch,image in zip(reconstruction_vals,test_images):
+    recon_missing = (255. *(recon_patch+1)/2.).astype(int)
+    true_image = (255. * (image + 1)/2.).astype(int)
     true_image_filled = true_image.copy()
-    print('{} {}'.format(xs,ys))
     true_image_filled[int(crop_pos):int(crop_pos+hiding_size), int(crop_pos):int(crop_pos+hiding_size)] = recon_missing
     cv2.imwrite(os.path.join(dump_dir,'ori_{}.jpg'.format(idx)),true_image)
     cv2.imwrite(os.path.join(dump_dir,'recon_{}.jpg'.format(idx)),true_image_filled)
-    cv2.imwrite(os.path.join(dump_dir,'patch_{}.jpg'.format(idx)),patch)
-    print('Saved image {}'.format(idx))
-
+    idx += 1
 
 
