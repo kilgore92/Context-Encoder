@@ -5,6 +5,7 @@ import random
 import cv2
 from util import *
 import shutil
+import pickle
 
 def create_file_list(image_dir,num_samples=50,sample=True):
 
@@ -46,14 +47,17 @@ hiding_size = 16
 batch_size = 64
 overlap_size = 7
 
-num_batches = 4
+num_batches = 8
 test_image_files = create_file_list(image_dir = dataset_path,num_samples=num_batches*batch_size)
+with open('test_images.pkl','wb') as f:
+    pickle.dump(test_image_files,f)
+
 model = Model(image_size = image_size , hiding_size = hiding_size , batch_size = batch_size )
 images_tf = tf.placeholder( tf.float32, [None, image_size, image_size, 3], name="images")
 images_hiding = tf.placeholder( tf.float32, [None, hiding_size, hiding_size, 3], name='images_hiding') #Placeholder for patches
 is_train = tf.placeholder( tf.bool )
 
-crop_pos = (image_size - hiding_size)/2
+crop_pos = 24
 
 # Define the comp nodes of the TF graph that we need
 reconstruction_ori, reconstruction = model.build_reconstruction(images_tf, is_train)
@@ -90,9 +94,12 @@ for batch in range(num_batches):
         recon_missing = (255. *(recon_patch+1)/2.).astype(int)
         true_image = (255. * (image + 1)/2.).astype(int)
         true_image_filled = true_image.copy()
+        true_image_missing = true_image.copy()
+        true_image_missing[int(crop_pos):int(crop_pos+hiding_size), int(crop_pos):int(crop_pos+hiding_size)] = 0
         true_image_filled[int(crop_pos):int(crop_pos+hiding_size), int(crop_pos):int(crop_pos+hiding_size)] = recon_missing
         cv2.imwrite(os.path.join(save_dir,'ori.jpg'),true_image)
         cv2.imwrite(os.path.join(save_dir,'recon.jpg'),true_image_filled)
+        cv2.imwrite(os.path.join(save_dir,'masked.jpg'),true_image_missing)
         idx += 1
 
 

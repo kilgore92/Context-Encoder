@@ -196,7 +196,7 @@ for epoch in range(n_epochs):
                     ii = 0
                     for test_image in test_images_ori:
                         test_image = (255. * (test_image+1)/2.).astype(int)
-                        test_image[crop_pos:crop_pos+hiding_size,crop_pos:crop_pos+hiding_size] = 0 # WHY THE FUCK IS THIS BEING DONE ?!
+                        test_image[int(crop_pos):int(crop_pos+hiding_size),int(crop_pos):int(crop_pos+hiding_size)] = 0
                         cv2.imwrite( os.path.join(result_path, 'img_'+str(ii)+'.ori.jpg'), test_image)
                         ii += 1
                         if ii > 50: break

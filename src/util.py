@@ -29,9 +29,11 @@ def load_image( path, pre_height=146, pre_width=146, width=128, height=128 ):
     crop_img = img[yy:yy+short_edge, xx:xx+short_edge]
     resized_img = skimage.transform.resize( crop_img, [pre_height,pre_width],mode = 'constant')
 
-    rand_y = np.random.randint(0, pre_height - height)
-    rand_x = np.random.randint(0, pre_width - width)
+    #rand_y = np.random.randint(0, pre_height - height)
+    #rand_x = np.random.randint(0, pre_width - width)
 
+    rand_y = 10
+    rand_x = 10
     resized_img = resized_img[ rand_y:rand_y+height, rand_x:rand_x+width, : ]
 
     # Scale to [-1,1]
