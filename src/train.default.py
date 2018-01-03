@@ -20,13 +20,13 @@ lambda_adv = 0.1
 
 image_size = 64
 overlap_size = 7
-hiding_size = 16
+hiding_size = 32
 
 trainset_path = 'train'
 testset_path  = 'test'
 dataset_path = '/home/ibhat/image_completion/dcgan-completion.tensorflow/data/celebA'
-model_path = '../models/celebA_ce'
-result_path= '../results/celebA_ce'
+model_path = '../models/celebA_ce_32'
+result_path= '../results/celebA_ce_32'
 pretrained_model_path = None
 
 if os.path.exists(model_path):

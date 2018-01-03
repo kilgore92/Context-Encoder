@@ -203,9 +203,9 @@ class Model():
                 deconv = self.new_deconv_layer( previousFeatureMap, [4,4,depth,previousDepth], [self.batch_size,featureMapSize,featureMapSize,depth], stride=2, name=("deconv" + str(layer)))
                 debn = tf.nn.relu(self.batchnorm(deconv, is_train, name=('debn'+ str(layer))))
                 previousFeatureMap = debn
-                previousDepth = depth
-                depth = depth / 2
-                featureMapSize = featureMapSize *2
+                previousDepth = int(depth)
+                depth = int(depth / 2)
+                featureMapSize = int(featureMapSize *2)
 
             recon = self.new_deconv_layer( debn, [4,4,3,previousDepth], [self.batch_size,self.hiding_size,self.hiding_size,3], stride=2, name="recon")
 
